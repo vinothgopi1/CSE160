@@ -50,15 +50,15 @@ function handleDrawEvent(){
     ctx.fillRect(0, 0, 400, 400);
 
     var x_value1 = document.getElementById("xVal1").value;
-    console.log("X value 1: " + x_value1);
+    //console.log("X value 1: " + x_value1);
     var y_value1 = document.getElementById("yVal1").value;
-    console.log("Y value 1: " + y_value1);
+    //console.log("Y value 1: " + y_value1);
     var v1 = new Vector3([x_value1, y_value1, 0]);
 
     var x_value2 = document.getElementById("xVal2").value;
-    console.log("X value 2: " + x_value2);
+    //console.log("X value 2: " + x_value2);
     var y_value2 = document.getElementById("yVal2").value;
-    console.log("Y value 2: " + y_value2);
+    //console.log("Y value 2: " + y_value2);
     var v2 = new Vector3([x_value2, y_value2, 0]);
 
     drawVector(v1, 'rgba(255, 0, 0, 1.0)');
