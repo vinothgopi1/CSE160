@@ -1,0 +1,74 @@
+<!-- Name: Vinoth Gopikrishnan -->
+<!-- Email: vgopikri@ucsc.edu -->
+<!-- Notes To Grader: N/A -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Draw a point (1)</title>
+  </head>
+
+  <style>
+    #sketch {
+      width: 400px;
+      height: 400px;
+      object-fit: contain; /* keep aspect ratio */
+      border: 1px solid #ccc; /* optional: match canvas border */
+    }
+  </style>
+
+  <body onload="main()">
+    <p>
+    <canvas id="webgl" width="400" height="400">
+    Please use a browser that supports "canvas"
+    </canvas>
+
+    <!-- render sketch of image -->
+    <img id="sketch" src="sketch.png" alt="My Sketch"/>
+    
+    </p>
+
+    <p id="numdot">XXX</p>
+
+    <p>
+    <button type="button" id="green">Green</button>
+    <button type="button" id="red">Red</button>
+
+    <button type="button" id="clearButton">Clear</button>
+    </p>
+
+    <p>
+        <button type="button" id="pointButton">Point</button>
+        <button type="button" id="triButton">Triangle</button>
+        <button type="button" id="circleButton">Circle</button>
+    </p>
+
+    <p>
+        Shape Color:
+    </p>
+
+    <p>
+    Red <input type="range" min="0" max="100" value="0" class="slider" id="redSlide"/>
+    Green <input type="range" min="0" max="100" value="0" class="slider" id="greenSlide"/>
+    Blue <input type="range" min="0" max="100" value="0" class="slider" id="blueSlide"/>
+    </p>
+
+    <p>
+    Shape Size <input type="range" min="5" max="40" value="5" class="slider" id="sizeSlide"/>
+    (Circles) Segment Count: <input type="range" min="10" max="50" value="10" class="slider" id="segmentSlider"/>
+    </p>
+
+    <p>
+        <button type="button" id="drawImage">Draw Image</button>
+    </p>
+
+    <script src="../lib/webgl-utils.js"></script>
+    <script src="../lib/webgl-debug.js"></script>
+    <script src="../lib/cuon-utils.js"></script>
+    <script src="Triangle.js"></script>
+    <script src="Point.js"></script>
+    <script src="Circle.js"></script>
+    <script src="asg1.js"></script>
+  </body>
+</html>
