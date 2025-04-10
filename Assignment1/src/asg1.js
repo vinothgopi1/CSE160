@@ -109,6 +109,7 @@ function addActionsForHtmlUI() {
     }
     document.getElementById('off').onclick = () => {
         g_rainbowMode = false; 
+        g_selectedColor = [1.0, 1.0, 1.0, 1.0];
     }
 
     //Slider Events
