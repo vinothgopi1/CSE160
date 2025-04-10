@@ -318,7 +318,7 @@ function generateRobotTriangles() {
 
   /* ---------- FEET (4) ----------------------------------------- */
   const footH  = 0.15;
-  const border = 0.02; // thickness of the white outline
+  const border = 0.02;
   const white  = [1, 1, 1, 1];
   const black  = [0, 0, 0, 1];
 
