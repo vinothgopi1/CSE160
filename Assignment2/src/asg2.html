@@ -1,7 +1,15 @@
 <!-- Name: Vinoth Gopikrishnan -->
 <!-- Email: vgopikri@ucsc.edu -->
 <!-- Notes To Grader: 
-    -
+    - Added new colors in green arms and blue colored hat
+    - modified Cube Class to include a drawCube helper function that takes in color
+    - Added a third and fourth joint to the arms and hat on my creature
+    - Used a non-cube primitive as a cone hat for my creature
+    - Hold down mouse and move to rotate image on canvas 365 degrees in any direction
+    - If you hold down shift and click mouse or click the poke button, it will cause the image to start flailing
+      (basically increase the speed of the auto movements as its special animation). Also creates a colorful background
+    - performance is definietley above 10fps when testing on my browser
+    - Side note, animation of arms looks a little rough, but had some trouble getting that working properly
 -->
 
 <!DOCTYPE html>
@@ -26,8 +34,6 @@
     Please use a browser that supports "canvas"
     </canvas>
 
-    <!-- render sketch of image -->
-    <img id="sketch" src="sketch.png" alt="My Sketch"/>
     
     </p>
 
@@ -73,9 +79,15 @@
     </p>
 
     <p>
-      Arms <input type="range" min="-45" max="45" value = "0" class="slider" id="armsSlide">
+      Arms <input type="range" min="-45" max="45" value="0" class="slider" id="armsSlide">
       <button type="button" id="animationArmsOnButton">ON</button>
       <button type="button" id="animationArmsOffButton">OFF</button>
+    </p>
+
+    <p>
+      Hat <input type="range" min="-45" max="45" value="0" class="slider" id="coneSlide">
+      <button type="button" id="animationConeOnButton">ON</button>
+      <button type="button" id="animationConeOffButton">OFF</button>
     </p>
 
     <p>
@@ -95,6 +107,7 @@
     <script src="Point.js"></script>
     <script src="Circle.js"></script>
     <script src="Cube.js"></script>
+    <script src="Cone.js"></script>
     <script src="asg2.js"></script>
   </body>
 </html>
