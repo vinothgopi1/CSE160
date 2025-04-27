@@ -1,15 +1,18 @@
 <!-- Name: Vinoth Gopikrishnan -->
 <!-- Email: vgopikri@ucsc.edu -->
-<!-- Notes To Grader: 
-    - Added new colors in green arms and blue colored hat
-    - modified Cube Class to include a drawCube helper function that takes in color
-    - Added a third and fourth joint to the arms and hat on my creature
-    - Used a non-cube primitive as a cone hat for my creature
-    - Hold down mouse and move to rotate image on canvas 365 degrees in any direction
-    - If you hold down shift and click mouse or click the poke button, it will cause the image to start flailing
-      (basically increase the speed of the auto movements as its special animation). Also creates a colorful background
-    - performance is definietley above 10fps when testing on my browser
-    - Side note, animation of arms looks a little rough, but had some trouble getting that working properly
+<!-- 
+
+Notes To Grader:
+ - my renderScene() function is just called renderAllShapes()
+ - Added green coloring on the arms and blue coloring on the cone hat
+ - Modified Cube class to include a drawCube(color, matrix) helper for easy color/pass-through
+ - Added a third and fourth joint to each arm, plus an extra joint on the hat for richer animation
+ - Used a non-cube primitive (Cone) to render the hat
+ - Click-and-drag (hold mouse) rotates the entire creature up to 365° in any direction
+ - Shift+click or pressing the “poke” button triggers a high-speed “flail” special animation and a dynamic rainbow background
+ - Maintains performance above 10 fps under typical browser testing
+ - have a three series join with body arm and then sword that work with two animations and don't break. 
+
 -->
 
 <!DOCTYPE html>
@@ -67,13 +70,13 @@
   -->
 
     <p>
-      Magenta <input type="range" min="-45" max="45" value="0" class="slider" id="magentaSlider">
+      Head <input type="range" min="-45" max="45" value="0" class="slider" id="magentaSlider">
       <button type="button" id="animationMagentaOnButton">ON</button>
       <button type="button" id="animationMagentaOffButton">OFF</button>
     </p>
 
     <p>
-      Yellow <input type="range" min="-45" max="45" value="0" class="slider" id="yellowSlide">
+      Body <input type="range" min="-45" max="45" value="0" class="slider" id="yellowSlide">
       <button type="button" id="animationYellowOnButton">ON</button>
       <button type="button" id="animationYellowOffButton">OFF</button>
     </p>
@@ -84,10 +87,17 @@
       <button type="button" id="animationArmsOffButton">OFF</button>
     </p>
 
+
     <p>
       Hat <input type="range" min="-45" max="45" value="0" class="slider" id="coneSlide">
       <button type="button" id="animationConeOnButton">ON</button>
       <button type="button" id="animationConeOffButton">OFF</button>
+    </p>
+
+    <p>
+      Legs
+      <button type="button" id="animationLegsOnButton">ON</button>
+      <button type="button" id="animationLegsOffButton">OFF</button>
     </p>
 
     <p>

@@ -114,6 +114,8 @@ let g_coneAnimation = false;
 let g_armsAnimation = false;
 let g_isPoking     = false;
 let g_pokeStart    = 0.0;
+let g_legAngle     = 0;
+let g_legAnimation = false;
 
 function addActionsForHtmlUI() {
 
@@ -156,6 +158,16 @@ function addActionsForHtmlUI() {
     document.getElementById('animationArmsOffButton').onclick = () => {
       g_armsAnimation = false;
     }
+
+    document.getElementById('animationLegsOnButton').onclick = () => {
+      g_legAnimation = true;
+    }
+
+    document.getElementById('animationLegsOffButton').onclick = () => {
+      g_legAnimation = false;
+    }
+
+    
     
     document.getElementById('angleSlide').addEventListener('mousemove', function() { g_globalAngle = Number(this.value); renderAllShapes(); });
    // document.getElementById('segmentSlider').addEventListener('mouseup', function() { g_selectedSegments = this.value;});
@@ -333,12 +345,16 @@ function updateAnimationAngles() {
     // even cone spins crazy
     g_coneAngle    = 180 * Math.sin(30 * t);
 
+    // fast leg‐kick
+    g_legAngle     = 45 * Math.sin(20 * t);
+
     // stop after 1 second
     if (t > 1.0) {
       g_isPoking = false;
       g_armsAngle = 0;
       g_magentaAngle = 0;
       g_coneAngle = 0;
+      g_legAngle     = 0;
     }
     return;
   }
@@ -361,8 +377,14 @@ function updateAnimationAngles() {
     g_armsAngle = 5 * Math.sin(2 * g_seconds);
   }
 
+  if (g_legAnimation) {
+    // swing ±30° around X at 1Hz
+    g_legAngle = 30 * Math.sin(2 * Math.PI * g_seconds);
+  }
+
 
 }
+
 
 function renderAllShapes() {
 
@@ -393,33 +415,105 @@ function renderAllShapes() {
 
   //base
   var body = new Cube();
-  body.color = [1.0, 0.0, 0.0, 1.0];
-  body.matrix.translate(-0.25, -0.75, 0.0);
+  body.color = [0.0, 0.0, 1.0, 1.0];
+  body.matrix.translate(-0.15, -0.65, 0.0);
   body.matrix.rotate(-5, 1, 0, 0);
-  body.matrix.scale(0.5, 0.3, 0.5);
+  body.matrix.scale(0.3, 0.2, 0.3);
   body.render();
+
+  const bodyCoordinatesMat = new Matrix4(body.matrix);
+
+ 
+  
+  const bodyMat = new Matrix4(body.matrix);
+    // leg dimensions & pivot offsets
+    const legHeight     = 0.7;
+    const legWidth      = 0.25;
+    const cubeScaleX    = 0.3;              // same as red body .scale(0.3,…)
+    const cubeScaleY    = 0.2;
+    const halfCubeW     = cubeScaleX * 0.5; // 0.15
+    const halfCubeH     = cubeScaleY * 0.5; // 0.10
+    const pivotY        = -halfCubeH;       // bottom of cube
+    const pivotX        = halfCubeW * 0.8;  // 0.15 * 0.8 = 0.12 (tweak to sit inside edges)
+
+
+
+    // ——— left leg pivot (shared by foot + leg) ———
+const pivotL = new Matrix4(bodyMat)
+.translate(0.1, pivotY, 0)       // hinge at top of thigh
+.rotate(g_legAngle, 1, 0, 0);     // same swing
+
+// ——— left foot under the leg ———
+var footL = new Cube();
+footL.color = [0.0, 0.0, 0.0, 0];   // foot color
+footL.matrix = new Matrix4(pivotL)
+.translate(0, -legHeight - 0.05, 0)   // drop below leg bottom; 0.05 = half foot‐height
+.scale(legWidth * 0.8, 0.25, legWidth * 0.8); // foot is half as wide, 0.1 tall
+footL.render();
+
+// ——— left leg itself ———
+var legL = new Cube();
+legL.color = [210/255, 180/255, 140/255, 1.0];
+legL.matrix = new Matrix4(pivotL)
+.translate(0, -legHeight/2, 0)     // center at half‐height
+.scale(legWidth, legHeight, legWidth);
+legL.render();
+
+
+// ——— right leg pivot ———
+const pivotR = new Matrix4(bodyMat)
+  .translate(0.7, pivotY, 0)
+  .rotate(-g_legAngle, 1, 0, 0);
+
+// right foot
+var footR = new Cube();
+footR.color = [0, 0, 0, 0];
+footR.matrix = new Matrix4(pivotR)
+  .translate(0, -legHeight - 0.05, 0)
+  .scale(legWidth * 0.8, 0.25, legWidth * 0.8);
+footR.render();
+
+// right leg
+var legR = new Cube();
+legR.color = [210/255, 180/255, 140/255, 1.0];
+legR.matrix = new Matrix4(pivotR)
+  .translate(0, -legHeight/2, 0)
+  .scale(legWidth, legHeight, legWidth);
+legR.render();
+
+
+
+
+
 
   //Body
   var leftArm = new Cube();
-  leftArm.color = [1, 1, 0, 1];
+  leftArm.color = [135/255, 206/255, 235/255, 1.0];;
   leftArm.matrix.setTranslate(0.0, -0.5, 0.0);
   leftArm.matrix.rotate(-5, 1, 0, 0);
   leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);
-  /*
-  if (g_yellowAnimation) {
-    leftArm.matrix.rotate(45*Math.sin(g_seconds), 0, 0, 1);
-  } else {
-    leftArm.matrix.rotate(-g_yellowAngle, 0, 0, 1);
-  }
-  */
   var yellowCoordinatesMat = new Matrix4(leftArm.matrix);
-  leftArm.matrix.scale(0.25, 0.7, 0.5);
+
+    // ← draw the backpack here, parented to that pivot+rotation
+    var back = new Cube();
+    back.color = [0.0, 1.0, 0.0, 1.0];
+    back.matrix = new Matrix4(yellowCoordinatesMat)
+      // tweak these to position the pack relative to the arm joint:
+      .translate(0, 0.3,  0.1)   // up & out from the arm pivot
+      .scale(0.2, 0.3, 0.33)       // backpack proportions
+      .translate(-0.5, 0.1, -0.01);     // tiny z-offset to avoid z-fight
+    back.render();
+
+  leftArm.matrix.scale(0.25, 0.7, 0.3);
   leftArm.matrix.translate(-0.5, 0, 0);
   leftArm.render();
 
+
+
+
   // Head
   var box = new Cube();
-  box.color = [1,0,1,1];
+  box.color = [0, 0, 0, 0];
   box.matrix = yellowCoordinatesMat;
   box.matrix.translate(0, 0.65, 0);
   box.matrix.rotate(g_magentaAngle, 0, 0, 1);
@@ -434,6 +528,7 @@ function renderAllShapes() {
 
 
 
+
   // how far out from the center of the yellow block
   const armOffsetX = 0.9;
   // how far down so they sit just under the pink head
@@ -444,7 +539,7 @@ function renderAllShapes() {
 
   // ––– LEFT ARM –––
   var armLeft = new Cube();
-  armLeft.color = [0.0, 1.0, 0.0, 1.0];
+  armLeft.color = [210/255, 180/255, 140/255, 1.0];
   armLeft.matrix = new Matrix4(yellowCoordinatesMat);
   // push left and down
   armLeft.matrix.rotate(-g_armsAngle, 0, 0, 1);
@@ -456,7 +551,7 @@ function renderAllShapes() {
 
   // ––– RIGHT ARM –––
   var armRight = new Cube();
-  armRight.color = [0.0, 1.0, 0.0, 1.0];
+  armRight.color = [210/255, 180/255, 140/255, 1.0];
   armRight.matrix = new Matrix4(yellowCoordinatesMat);
   // push right and down
   armRight.matrix.rotate(g_armsAngle, 0, 0, 1);
@@ -465,23 +560,28 @@ function renderAllShapes() {
   armRight.matrix.scale(armScaleX, armScaleY, armScaleZ);
   armRight.render();
 
+    // ——— sword in right hand (hilt + blade) ———
+  // handPivotR sits at the end of the arm
+  const handPivotR = new Matrix4(yellowCoordinatesMat)
+    .rotate(g_armsAngle, 0, 0, 1)
+    .translate(armOffsetX + armScaleX/2, armOffsetY, 0);
+
+  // hilt
+  const hilt = new Cube();
+  hilt.color  = [0.4, 0.2, 0.1, 1.0];
+  hilt.matrix = new Matrix4(handPivotR)
+    .scale(0.8, 0.15, 0.15);
+  hilt.render();
+
+  // blade
+  const blade = new Cube();
+  blade.color  = [0.8, 0.8, 0.8, 1.0];
+  blade.matrix = new Matrix4(handPivotR)
+    .translate(0.15, - (0.25 + 0.06), 0.01)   // 0.25 = bladeH/2, 0.06 = hiltH/2
+    .scale(0.4, 1.9, 0.3);
+  blade.render();
 
 
-/*
-
-  //Top of Head Cone
-  var coneHat = new Cone();
-  coneHat.color = [0.0, 0.0, 1.0, 1.0];
-  coneHat.matrix = magentaMatrix
-    // lift it up by half the cube’s height (cube is 1 unit tall, scaled by 0.3 → 0.15)
-    .translate(0.5, 1, 0.5)
-    // scale so the base matches the head’s 0.3 width
-    .scale(0.3, 0.3, 0.3)
-    // now rotate each frame around Y (or whichever axis you like)
-    .rotate(g_coneAngle, 0, 1, 0);
-
-  coneHat.render();
-*/
 
 const conePivot = new Matrix4(box.matrix)
     .translate(0.5, 1.0, 0.5);
@@ -501,6 +601,9 @@ coneHat.render();
   sendTextToHTML( " ms: " + Math.floor(duration) + " fps: " + Math.floor(10000 / duration), 'numdot');
 
 }
+
+
+
 
 function sendTextToHTML(text, htmlID) { 
     var htmlElm = document.getElementById(htmlID);
