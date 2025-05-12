@@ -1,3 +1,23 @@
+<!-- Name: Vinoth Gopikrishnan-->
+<!-- Email: vgopikri@ucsc.edu-->
+
+<!--
+
+  Notes To Grader:
+  - created ground and sky with flattened and big cube
+  - used two differnent texture on both the ground and sky
+  - the cubes in my world do not use textures but rely on color 
+  - Camera movement that is interactive with player movement and turns
+  - Q and E to turn left and right
+  - Perspective camera
+  - world is immersive and themed (I hope)
+  - had some trouble getting the mouse to look around to work, 
+  it woudl interfere with me being able to create blocks and would mess up my world render
+  - ability to add and delete blocks
+  - simple story where the goal is to find water in the desert.
+  - Wow factor you can flip the world upside down (could make it easier to find water blocks)
+-->
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -43,9 +63,26 @@
 
     <!-- Sidebar in the white area to the right -->
     <div id="sidebar">
+
+      <p>
+
+        BASIC CONTROLS:
+        W A S D to move around
+        Q to look left
+        E to look right
+      </p>
+
+      <p>
+        MISSION: SURVIVE !!!
+      </p>
+
+      <p>
+        OBJECTIVE: FIND WATER ( BLUE CUBES ) IN THE MIDDLE OF THIS HARSH DESSERT
+      </p>
+
       <p>
         SPECIAL FEATURE:<br/>
-        CLICK F ON KEYBOARD TO FLIP THE WORLD!!!
+        Click 'f' on the keyboard to flip the entire world upside down
       </p>
       <p id="numdot">
         Frames: --  ms: --  fps: --
@@ -62,7 +99,6 @@
     <script src="Point.js"></script>
     <script src="Circle.js"></script>
     <script src="Cube.js"></script>
-    <script src="CubePrism.js"></script>
     <script src="DrawAllShapes.js"></script>
     <script src="asg3.js"></script>
   </body>

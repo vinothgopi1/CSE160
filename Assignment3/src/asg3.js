@@ -89,6 +89,59 @@ function deleteBlockInFront() {
   const stepSize    = 0.1;
 
   for (let t = 0; t <= maxDistance; t += stepSize) {
+    // current point in world space
+    const hit = new Vector3(dir.elements).mul(t).add(origin);
+
+    // map to user grid indices
+    const jUser = Math.floor(hit.elements[0] / cellSize + gridCols/2);
+    const iUser = Math.floor(hit.elements[2] / cellSize + gridRows/2);
+
+    // if we’re inside the user grid and that cell has blocks, delete the top one
+    if (
+      iUser >= 0 && iUser < gridRows &&
+      jUser >= 0 && jUser < gridCols
+    ) {
+      const cell = g_map[iUser][jUser];
+      if (cell.height > 0) {
+        cell.height--;
+        console.log(`Deleted user block at [${iUser},${jUser}], new height ${cell.height}`);
+        renderScene();
+        return;
+      }
+    }
+
+    // otherwise map to environment grid
+    const jEnv = Math.floor(hit.elements[0] / cellSize + wallMapSize/2);
+    const iEnv = Math.floor(hit.elements[2] / cellSize + wallMapSize/2);
+
+    if (
+      iEnv >= 0 && iEnv < wallMapSize &&
+      jEnv >= 0 && jEnv < wallMapSize
+    ) {
+      if (wallMap32[iEnv][jEnv] > 0) {
+        wallMap32[iEnv][jEnv]--;
+        console.log(`Deleted env wall at [${iEnv},${jEnv}], new height ${wallMap32[iEnv][jEnv]}`);
+        renderScene();
+        return;
+      }
+    }
+  }
+
+  console.log("No block found in front to delete.");
+}
+
+/*
+
+function deleteBlockInFront() {
+  const origin = new Vector3(g_camera.eye.elements);
+  const dir    = new Vector3(g_camera.at.elements)
+                    .sub(g_camera.eye)
+                    .normalize();
+
+  const maxDistance = 5;
+  const stepSize    = 0.1;
+
+  for (let t = 0; t <= maxDistance; t += stepSize) {
     // 1) march the ray
     const hit = new Vector3(dir.elements).mul(t).add(origin);
 
@@ -127,6 +180,7 @@ function deleteBlockInFront() {
 
   console.log("No block found in front within range.");
 }
+*/
 
 function addActionsForHtmlUI(){
     // This function was empty in your original code
@@ -195,7 +249,7 @@ function initTextures() {
     if (!image1) { console.log('Failed to create the image1 object'); return false; }
     image.onload = function(){ sendTextureToTEXTURE0(image); };
     image1.onload = function(){ sendTextureToTEXTURE1(image1); };
-    image.src = 'grass.png';
+    image.src = 'sand.png';
     image1.src = 'sky.jpg';
     return true;
 }
@@ -217,7 +271,7 @@ function sendTextureToTEXTURE0(image) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     }
     gl.uniform1i(u_Sampler0, 0);
-    console.log("Finished loadTexture for grass.png (TEXTURE0)"); // Clarified log
+    console.log("Finished loadTexture for sand.png (TEXTURE0)"); // Clarified log
 }
 
 function sendTextureToTEXTURE1(image) {
@@ -375,7 +429,7 @@ function keydown(ev) {
   } else if (ev.keyCode == 39) { // Right Arrow
       g_camera.panRight(); // Turn camera right (Yaw)
   } else if (ev.keyCode == 70) { // F
-      g_camera.flipView(); // Call panDown (your flip effect)
+      g_camera.panDown(); // Call panDown (your flip effect)
   } else if (ev.keyCode == 81) { // Q
       g_camera.panLeft(); // Turn camera left (Yaw)
   } else if (ev.keyCode == 69) { // E
@@ -428,8 +482,9 @@ function renderScene(){
     // Pass the buffers to drawAllShapes
     drawAllShapes(cubePositionBuffer, cubeUVBuffer);
 }
-
+/*
 function placeBlockAtMouse(ev) {
+  console.log("placeBlockAtMouse function called!");
   // 1) canvas → NDC unprojection (same as before)
   const rect = canvas.getBoundingClientRect();
   const x_ndc = ((ev.clientX - rect.left) / canvas.width ) * 2 - 1;
@@ -515,6 +570,91 @@ function placeBlockAtMouse(ev) {
     console.log(`Cell [${i0},${j0}] at max height (${maxHeight}), no block added`);
   }
 }
+*/
+
+function placeBlockAtMouse(ev) {
+  // 1) Convert mouse click to NDC
+  const rect = canvas.getBoundingClientRect();
+  const x_ndc = ((ev.clientX - rect.left) / canvas.width) * 2 - 1;
+  const y_ndc = ((canvas.height - (ev.clientY - rect.top)) / canvas.height) * 2 - 1;
+
+  // 2) Build inverse PV for unproject
+  const PV    = new Matrix4().set(g_camera.projMat).multiply(g_camera.viewMat);
+  const invPV = new Matrix4().setInverseOf(PV);
+  const e     = invPV.elements;
+  function unproject(nx, ny, nz) {
+    const tx = e[0]*nx + e[4]*ny + e[8]*nz  + e[12];
+    const ty = e[1]*nx + e[5]*ny + e[9]*nz  + e[13];
+    const tz = e[2]*nx + e[6]*ny + e[10]*nz + e[14];
+    const tw = e[3]*nx + e[7]*ny + e[11]*nz + e[15];
+    return [ tx/tw, ty/tw, tz/tw ];
+  }
+
+  // 3) Ray origin & dir
+  const [nx, ny, nz] = unproject(x_ndc, y_ndc, -1);
+  const [fx, fy, fz] = unproject(x_ndc, y_ndc,  1);
+  const origin = new Vector3([ nx, ny, nz ]);
+  const dir    = new Vector3([ fx-nx, fy-ny, fz-nz ]).normalize();
+
+  // 4) Try hitting existing stack
+  let placed = false;
+  for (let i = 0; i < gridRows && !placed; i++) {
+    for (let j = 0; j < gridCols && !placed; j++) {
+      const cell = g_map[i][j];
+      const hMax = cell.height;
+      if (hMax === 0) continue;
+
+      const cx = (j - gridCols/2 + 0.5) * cellSize;
+      const cz = (i - gridRows/2 + 0.5) * cellSize;
+
+      for (let h = hMax - 1; h >= 0; h--) {
+        const planeY = (h + 1) * blockSize;
+        const t = (planeY - origin.elements[1]) / dir.elements[1];
+        if (t <= 0) continue;
+
+        const px = origin.elements[0] + dir.elements[0] * t;
+        const pz = origin.elements[2] + dir.elements[2] * t;
+
+        if (Math.abs(px - cx) <= blockSize/2 && Math.abs(pz - cz) <= blockSize/2) {
+          if (hMax < maxHeight) {
+            cell.height++;
+            // give the new block the world’s default brown color
+            cell.color = [0.5, 0.35, 0.2, 1.0];
+            console.log(`Added block at [${i},${j}], new height ${cell.height}`);
+          } else {
+            console.log(`Cell [${i},${j}] already at max height (${maxHeight})`);
+          }
+          placed = true;
+          break;
+        }
+      }
+    }
+  }
+  if (placed) return;
+
+  // 5) Fallback: ground‐plane
+  const t0 = - origin.elements[1] / dir.elements[1];
+  if (t0 <= 0) { console.log("Ray missed the ground plane"); return; }
+  const hitX = origin.elements[0] + dir.elements[0] * t0;
+  const hitZ = origin.elements[2] + dir.elements[2] * t0;
+  const j0 = Math.round(hitX / cellSize + gridCols/2 - 0.5);
+  const i0 = Math.round(hitZ / cellSize + gridRows/2 - 0.5);
+
+  if (i0 < 0 || i0 >= gridRows || j0 < 0 || j0 >= gridCols) {
+    console.log("Ground‐plane click outside grid");
+    return;
+  }
+
+  const groundCell = g_map[i0][j0];
+  if (groundCell.height < maxHeight) {
+    groundCell.height++;
+    groundCell.color = [0.5, 0.35, 0.2, 1.0];
+    console.log(`Placed block on floor at [${i0},${j0}], height now ${groundCell.height}`);
+  } else {
+    console.log(`Cell [${i0},${j0}] at max height (${maxHeight}), no block added`);
+  }
+}
+
 
 function initWalls() {
   // You can modify the wall map here if needed

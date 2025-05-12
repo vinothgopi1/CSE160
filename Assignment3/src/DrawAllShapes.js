@@ -11,8 +11,8 @@ const gridCols   = 20;
 const wallMapSize = 32;
 
 // ─── 2) Map Data ─────────────────────────────────────────────────────────
-// User‐placed block height map (declared, will be initialized in initWorld)
-let g_map;
+// User‐placed block height and color map (initialized in initWorld)
+let g_map; // Each element will be an object { height: number, color: [r, g, b, a]
 
 // Generate a 32×32 procedural wall map
 function generateWallMap(size) {
@@ -76,15 +76,60 @@ function generateWallMap(size) {
 let wallMap32 = generateWallMap(wallMapSize);
 
 function initWorld() {
-  // Initialize an empty height‐map (all zeros) on each call
+  // Initialize the height and color map
   g_map = Array.from({ length: gridRows }, () =>
-    Array.from({ length: gridCols }, () => 0)
+    Array.from({ length: gridCols }, () => ({ height: 0, color: [0.5, 0.35, 0.2, 1] })) // Default to brown
   );
-  console.log("World map initialized.");
-  // You can add code here to create an initial world layout in g_map
-  // For example, to place some initial walls that appear every time:
-  // g_map[5][5] = 2;
-  // g_map[10][10] = 3;
+  console.log("World map initialized with a sparse random layout and clear starting area (with fixed colors).");
+
+  // Populate g_map with random heights and colors for initial world
+  for (let i = 0; i < gridRows; i++) {
+    for (let j = 0; j < gridCols; j++) {
+      if (Math.random() >= 0.85) {
+        g_map[i][j].height = Math.floor(Math.random() * maxHeight);
+        // Randomly assign color (approximately 50% blue, 50% brown)
+        if (Math.random() < 0.5) {
+          g_map[i][j].color = [0.0, 0.0, 1.0, 1.0]; // Blue
+        }
+      }
+    }
+  }
+
+  // Clear a region around the starting spot (center of the grid)
+  const centerX = Math.floor(gridCols / 2);
+  const centerZ = Math.floor(gridRows / 2);
+  const clearRadius = 6;
+
+  for (let i = -clearRadius; i <= clearRadius; i++) {
+    for (let j = -clearRadius; j <= clearRadius; j++) {
+      const clearX = centerX + j;
+      const clearZ = centerZ + i;
+      if (clearX >= 0 && clearX < gridCols && clearZ >= 0 && clearZ < gridRows) {
+        g_map[clearZ][clearX].height = 0;
+      }
+    }
+  }
+
+  // Add 5 blue cubes at specific locations
+  const blueCubePositions = [
+    { x: 2, y: 1, z: 2 },
+    { x: 5, y: 2, z: 5 },
+    { x: 10, y: 1, z: 10 },
+    { x: 15, y: 3, z: 12 },
+    { x: 18, y: 1, z: 18 },
+  ];
+
+  for (let i = 0; i < blueCubePositions.length; i++) {
+    const pos = blueCubePositions[i];
+    const gridX = Math.round(pos.x);
+    const gridY = Math.round(pos.y);
+    const gridZ = Math.round(pos.z);
+
+    if (gridX >= 0 && gridX < gridCols && gridZ >= 0 && gridZ < gridRows && gridY < maxHeight) {
+      g_map[gridZ][gridX].height = Math.max(g_map[gridZ][gridX].height, gridY);
+      g_map[gridZ][gridX].color = [0.0, 0.0, 1.0, 1.0]; // Ensure blue
+    }
+  }
 }
 
 
@@ -97,22 +142,19 @@ function drawMap(cube, positionBuffer) {
   const xOff = cols / 2, zOff = rows / 2;
 
   const m = new Matrix4();
-  cube.color = [0.5, 0.35, 0.2, 1];
   cube.textureNum = -2;
 
   for (let i = 0; i < rows; i++) {
     for (let j = 0; j < cols; j++) {
-      const height = g_map[i][j];
+      const blockData = g_map[i][j];
+      const height = blockData.height;
       if (height <= 0) continue;
+
+      cube.color = blockData.color; // Use the stored color
 
       for (let h = 0; h < height; h++) {
         const cx = (j - xOff + 0.5) * cellSize;
         const cz = (i - zOff + 0.5) * cellSize;
-
-        if (g_map[i][j] > 0) {
-         console.log("Block Rendered at Grid:", j, i, "World Coords:", cx, (height - 0.5) * blockSize, cz); // Log placement
-       }
-
         const cy = (h + 0.5) * blockSize;
 
         m.setTranslate(cx, cy, cz);
