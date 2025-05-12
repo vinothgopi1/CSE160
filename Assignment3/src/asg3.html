@@ -3,13 +3,56 @@
   <head>
     <meta charset="utf-8" />
     <title>Blocky World</title>
+    <style>
+      /* make the page fill the viewport */
+      html, body {
+        margin: 0;
+        height: 100vh;
+        position: relative;
+      }
+
+      /* keep your canvas exactly 1080×720 */
+      #webgl {
+        display: block;
+      }
+
+      /* sidebar sits to the right of the canvas */
+      #sidebar {
+        position: absolute;
+        top: 0;
+        left: 1080px;      /* the exact width of your canvas */
+        right: 0;          /* fill to the right edge of the browser */
+        bottom: 0;
+        background: white;
+        padding: 10px;
+        box-sizing: border-box;
+        overflow-y: auto;  /* scroll if content grows */
+      }
+
+      /* tidy up paragraph spacing */
+      #sidebar p {
+        margin: 1em 0;
+      }
+    </style>
   </head>
   <body onload="main()">
+    <!-- Your unchanged canvas -->
     <canvas id="webgl" width="1080" height="720">
       Please use a browser that supports "canvas"
     </canvas>
-    <p id="numdot">Frames: -- ms: -- fps: --</p>
 
+    <!-- Sidebar in the white area to the right -->
+    <div id="sidebar">
+      <p>
+        SPECIAL FEATURE:<br/>
+        CLICK F ON KEYBOARD TO FLIP THE WORLD!!!
+      </p>
+      <p id="numdot">
+        Frames: --  ms: --  fps: --
+      </p>
+    </div>
+
+    <!-- Your scripts -->
     <script src="../lib/webgl-utils.js"></script>
     <script src="../lib/webgl-debug.js"></script>
     <script src="../lib/cuon-utils.js"></script>
@@ -20,7 +63,7 @@
     <script src="Circle.js"></script>
     <script src="Cube.js"></script>
     <script src="CubePrism.js"></script>
-    <script src="asg3.js"></script>
     <script src="DrawAllShapes.js"></script>
+    <script src="asg3.js"></script>
   </body>
 </html>

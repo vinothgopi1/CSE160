@@ -16,6 +16,14 @@ var u_Clicked;
 var g_camera;
 let isDragging = false; // This was in your original file
 
+var isRotating = false;
+var lastMouseX = null;
+var lastMouseY = null;
+
+// Add these lines to declare cubePositionBuffer and cubeUVBuffer globally
+var cubePositionBuffer;
+var cubeUVBuffer;
+
 // UI (These were in your original file)
 var gAnimalGlobalRotation = 0; // Camera
 var g_jointAngle = 0; // Joint 1
@@ -70,6 +78,55 @@ void main() {
         gl_FragColor = vec4(1,.2,.2,1);              // Error, Red
     }
 }`
+
+function deleteBlockInFront() {
+  const origin = new Vector3(g_camera.eye.elements);
+  const dir    = new Vector3(g_camera.at.elements)
+                    .sub(g_camera.eye)
+                    .normalize();
+
+  const maxDistance = 5;
+  const stepSize    = 0.1;
+
+  for (let t = 0; t <= maxDistance; t += stepSize) {
+    // 1) march the ray
+    const hit = new Vector3(dir.elements).mul(t).add(origin);
+
+    // 2) map to your user grid coords
+    const jUser = Math.floor(hit.elements[0] / cellSize + gridCols/2);
+    const iUser = Math.floor(hit.elements[2] / cellSize + gridRows/2);
+
+    // if it’s inside your user grid and there’s a block, delete it
+    if (
+      iUser >= 0 && iUser < gridRows &&
+      jUser >= 0 && jUser < gridCols &&
+      g_map[iUser][jUser] > 0
+    ) {
+      g_map[iUser][jUser]--;
+      console.log(`Deleted user block at [${iUser},${jUser}], new height ${g_map[iUser][jUser]}`);
+      renderScene();
+      return;
+    }
+
+    // 3) otherwise map to the environment grid coords
+    const jEnv = Math.floor(hit.elements[0] / cellSize + wallMapSize/2);
+    const iEnv = Math.floor(hit.elements[2] / cellSize + wallMapSize/2);
+
+    // if it’s inside your wallMap32 and there’s a wall, delete it
+    if (
+      iEnv >= 0 && iEnv < wallMapSize &&
+      jEnv >= 0 && jEnv < wallMapSize &&
+      wallMap32[iEnv][jEnv] > 0
+    ) {
+      wallMap32[iEnv][jEnv]--;
+      console.log(`Deleted env wall at [${iEnv},${jEnv}], new height ${wallMap32[iEnv][jEnv]}`);
+      renderScene();
+      return;
+    }
+  }
+
+  console.log("No block found in front within range.");
+}
 
 function addActionsForHtmlUI(){
     // This function was empty in your original code
@@ -181,11 +238,24 @@ function sendTextureToTEXTURE1(image) {
     console.log("Finished loadTexture1 for sky.jpg (TEXTURE1)"); // Clarified log
 }
 
+
 function main() {
 
-    initWalls();
+    setupWebGL(); // Initialize WebGL and get the gl context
 
-    setupWebGL();
+
+    initWorld();
+
+    // Now that gl is initialized, you can create buffers
+    cubePositionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cubePositionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Cube().vertices, gl.STATIC_DRAW);
+
+    cubeUVBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cubeUVBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Cube().uvs, gl.STATIC_DRAW);
+
+    initWalls();
     connectVariablesToGLSL();
     addActionsForHtmlUI(); // Your original call
 
@@ -196,18 +266,23 @@ function main() {
     canvas.onmousedown = function(ev) {
         isDragging = true;
         check(ev); // Your original call
+        isRotating = ev.button === 0; // Rotate only on left mouse button down
+        lastMouseX = ev.clientX;
+        lastMouseY = ev.clientY;
     };
     canvas.onmouseup = function(ev) {
         isDragging = false;
+        isRotating = false;
     };
     canvas.onmouseout = function(ev) {
         isDragging = false;
+        isRotating = false;
     };
     canvas.onmousemove = function(ev) {
-        if (isDragging) {
-            mouseCam(ev);
-        }
-    };
+      if (isDragging && !isRotating) {
+        mouseCam(ev); // Existing panning
+    }
+  };
 
     // right after you set up camera & GLSL:
     canvas.onclick = placeBlockAtMouse;
@@ -274,7 +349,7 @@ function mouseCam(ev){
         g_camera.panMRight(panAmount); // panMRight (corrected in Camera.js) expects positive for right turn
     }
 }
-
+/*
 function keydown(ev){
     if (ev.keyCode == 87) { g_camera.forward(); }
     else if (ev.keyCode == 65) { g_camera.left(); }
@@ -283,6 +358,32 @@ function keydown(ev){
     else if (ev.keyCode == 81) { g_camera.panLeft(); }
     else if (ev.keyCode == 69) { g_camera.panRight(); }
     renderScene();
+}
+*/
+
+function keydown(ev) {
+  if (ev.keyCode == 87) { // W
+      g_camera.forward(); // Move forward
+  } else if (ev.keyCode == 83) { // S
+      g_camera.back();    // Move backward
+  } else if (ev.keyCode == 65) { // A
+      g_camera.left();    // Strafe left
+  } else if (ev.keyCode == 68) { // D
+      g_camera.right();   // Strafe right
+  } else if (ev.keyCode == 37) { // Left Arrow
+      g_camera.panLeft(); // Turn camera left (Yaw)
+  } else if (ev.keyCode == 39) { // Right Arrow
+      g_camera.panRight(); // Turn camera right (Yaw)
+  } else if (ev.keyCode == 70) { // F
+      g_camera.flipView(); // Call panDown (your flip effect)
+  } else if (ev.keyCode == 81) { // Q
+      g_camera.panLeft(); // Turn camera left (Yaw)
+  } else if (ev.keyCode == 69) { // E
+      g_camera.panRight(); // Turn camera right (Yaw)
+  } else if (ev.keyCode == 86) { // V
+      deleteBlockInFront(); // Call the delete block function
+  }
+  renderScene();
 }
 
 function tick(){
@@ -324,7 +425,8 @@ function renderScene(){
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    drawAllShapes();
+    // Pass the buffers to drawAllShapes
+    drawAllShapes(cubePositionBuffer, cubeUVBuffer);
 }
 
 function placeBlockAtMouse(ev) {

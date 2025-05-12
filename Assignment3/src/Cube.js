@@ -1,3 +1,4 @@
+/*
 class Cube{
   constructor(){
      this.color = [1.0, 1.0, 1.0, 1.0];
@@ -122,5 +123,95 @@ class Cube{
      // If they are textureNum = -2 (solid color), then drawTriangle3D is fine as is.
      // The map cubes in DrawAllShapes.js set textureNum = -2, so this is okay.
      drawTriangle3D(allverts);
+  }
+}
+*/
+
+class Cube {
+  constructor() {
+    this.color = [1.0, 1.0, 1.0, 1.0];
+    this.matrix = new Matrix4();
+    this.textureNum = -2; // Default to debug color
+    this.vertices = new Float32Array([
+      // Front face
+      0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0,
+      0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0,
+      // Back face
+      0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0,
+      0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+      // Top face
+      0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0,
+      0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0,
+      // Bottom face
+      0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0,
+      1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0,
+      // Left face
+      0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0,
+      0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0,
+      // Right face
+      1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
+      1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+    ]);
+    this.uvs = new Float32Array([
+      // Front
+      0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
+      0.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+      // Back
+      0.0, 0.0, 1.0, 1.0, 1.0, 0.0,
+      0.0, 0.0, 0.0, 1.0, 1.0, 1.0,
+      // Top
+      0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
+      0.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+      // Bottom
+      0.0, 0.0, 0.0, 1.0, 1.0, 0.0,
+      1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+      // Left
+      0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
+      0.0, 0.0, 0.0, 1.0, 1.0, 1.0,
+      // Right
+      0.0, 0.0, 1.0, 1.0, 1.0, 0.0,
+      0.0, 0.0, 0.0, 1.0, 1.0, 1.0,
+    ]);
+    this.numVertices = 36;
+  }
+
+  render(positionBuffer, uvBuffer) {
+    var rgba = this.color;
+
+    gl.uniform1i(u_whichTexture, this.textureNum);
+    gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
+    gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Position);
+
+    if (this.textureNum >= 0) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
+      gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_UV);
+    } else if (a_UV >= 0) {
+      gl.disableVertexAttribArray(a_UV);
+    }
+
+    gl.drawArrays(gl.TRIANGLES, 0, this.numVertices);
+  }
+
+  renderfast(positionBuffer) {
+    var rgba = this.color;
+
+    gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
+    gl.uniform1i(u_whichTexture, this.textureNum);
+    gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Position);
+
+    if (a_UV >= 0) {
+      gl.disableVertexAttribArray(a_UV);
+    }
+
+    gl.drawArrays(gl.TRIANGLES, 0, this.numVertices);
   }
 }
