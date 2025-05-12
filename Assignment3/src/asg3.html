@@ -6,16 +6,18 @@
   Notes To Grader:
   - created ground and sky with flattened and big cube
   - used two differnent texture on both the ground and sky
-  - the cubes in my world do not use textures but rely on color 
+  - the cubes and cactus in my world do not use textures but just color and coexist
   - Camera movement that is interactive with player movement and turns
   - Q and E to turn left and right
   - Perspective camera
   - world is immersive and themed (I hope)
   - had some trouble getting the mouse to look around to work, 
-  it woudl interfere with me being able to create blocks and would mess up my world render
+  it would interfere with me being able to create blocks and would mess up my world render
   - ability to add and delete blocks
-  - simple story where the goal is to find water in the desert.
-  - Wow factor you can flip the world upside down (could make it easier to find water blocks)
+  - simple story where the goal is to find water in the desert. Once you destroy one water block you win
+  - Wow factor you can flip the world upside down (could make it easier to find water blocks). Also keep track 
+  of if you find water or not and tell you that you win the game
+  - performance not the greatest
 -->
 
 <!DOCTYPE html>
@@ -53,6 +55,24 @@
       #sidebar p {
         margin: 1em 0;
       }
+
+      #overlayMessage {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 20px 40px;
+        background: rgba(0, 0, 0, 0.75);
+        color: white;
+        font-size: 2rem;
+        font-family: sans-serif;
+        border-radius: 8px;
+        display: none;
+        pointer-events: none;
+        z-index: 10;
+        text-align: center;
+      }
+
     </style>
   </head>
   <body onload="main()">
@@ -60,6 +80,8 @@
     <canvas id="webgl" width="1080" height="720">
       Please use a browser that supports "canvas"
     </canvas>
+
+    <div id="overlayMessage"></div>
 
     <!-- Sidebar in the white area to the right -->
     <div id="sidebar">
@@ -70,6 +92,8 @@
         W A S D to move around
         Q to look left
         E to look right
+        Click with mouse to place a dirt block (max height to stack is 3)
+        Click 'V' to delete block infront of you
       </p>
 
       <p>
@@ -77,7 +101,8 @@
       </p>
 
       <p>
-        OBJECTIVE: FIND WATER ( BLUE CUBES ) IN THE MIDDLE OF THIS HARSH DESSERT
+        OBJECTIVE: FIND WATER ( BLUE CUBES ) IN THE MIDDLE OF THIS HARSH DESSERT. IF YOU FIND WATER YOU WIN!
+        REFRESH THE BROWSER FOR  A NEW GAME.
       </p>
 
       <p>

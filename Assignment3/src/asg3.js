@@ -78,7 +78,7 @@ void main() {
         gl_FragColor = vec4(1,.2,.2,1);              // Error, Red
     }
 }`
-
+/*
 function deleteBlockInFront() {
   const origin = new Vector3(g_camera.eye.elements);
   const dir    = new Vector3(g_camera.at.elements)
@@ -129,9 +129,18 @@ function deleteBlockInFront() {
 
   console.log("No block found in front to delete.");
 }
+*/
 
-/*
+function showOverlayMessage(msg, duration = 2000) {
+  const overlay = document.getElementById('overlayMessage');
+  overlay.textContent = msg;
+  overlay.style.display = 'block';
+  setTimeout(() => {
+    overlay.style.display = 'none';
+  }, duration);
+}
 
+// Updated deleteBlockInFront:
 function deleteBlockInFront() {
   const origin = new Vector3(g_camera.eye.elements);
   const dir    = new Vector3(g_camera.at.elements)
@@ -142,45 +151,62 @@ function deleteBlockInFront() {
   const stepSize    = 0.1;
 
   for (let t = 0; t <= maxDistance; t += stepSize) {
-    // 1) march the ray
     const hit = new Vector3(dir.elements).mul(t).add(origin);
 
-    // 2) map to your user grid coords
+    // 1) user grid
     const jUser = Math.floor(hit.elements[0] / cellSize + gridCols/2);
     const iUser = Math.floor(hit.elements[2] / cellSize + gridRows/2);
 
-    // if it’s inside your user grid and there’s a block, delete it
     if (
       iUser >= 0 && iUser < gridRows &&
-      jUser >= 0 && jUser < gridCols &&
-      g_map[iUser][jUser] > 0
+      jUser >= 0 && jUser < gridCols
     ) {
-      g_map[iUser][jUser]--;
-      console.log(`Deleted user block at [${iUser},${jUser}], new height ${g_map[iUser][jUser]}`);
-      renderScene();
-      return;
+      const cell = g_map[iUser][jUser];
+      if (cell.height > 0) {
+        // record if it was blue
+        const wasBlue =
+          cell.color[0] === 0 &&
+          cell.color[1] === 0 &&
+          cell.color[2] === 1 &&
+          cell.color[3] === 1;
+
+        // remove block
+        cell.height--;
+        renderScene();
+
+        if (wasBlue) {
+          showOverlayMessage('🎉 YOU WIN! 🎉', 3000);
+        } else {
+          console.log(
+            `Deleted block at [${iUser},${jUser}], new height ${cell.height}`
+          );
+        }
+        return;
+      }
     }
 
-    // 3) otherwise map to the environment grid coords
+    // 2) environment walls
     const jEnv = Math.floor(hit.elements[0] / cellSize + wallMapSize/2);
     const iEnv = Math.floor(hit.elements[2] / cellSize + wallMapSize/2);
 
-    // if it’s inside your wallMap32 and there’s a wall, delete it
     if (
       iEnv >= 0 && iEnv < wallMapSize &&
       jEnv >= 0 && jEnv < wallMapSize &&
       wallMap32[iEnv][jEnv] > 0
     ) {
       wallMap32[iEnv][jEnv]--;
-      console.log(`Deleted env wall at [${iEnv},${jEnv}], new height ${wallMap32[iEnv][jEnv]}`);
       renderScene();
+      console.log(
+        `Deleted env wall at [${iEnv},${jEnv}], new height ${wallMap32[iEnv][jEnv]}`
+      );
       return;
     }
   }
 
-  console.log("No block found in front within range.");
+  console.log("No block found in front to delete.");
 }
-*/
+
+
 
 function addActionsForHtmlUI(){
     // This function was empty in your original code
