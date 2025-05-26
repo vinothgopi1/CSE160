@@ -123,41 +123,8 @@ void main() {
   v_UV      = a_UV;
 }
 `;
-/*
-const FSHADER_SOURCE = `
-precision mediump float;
-varying vec3  v_Normal;
-varying vec4  v_VertPos;
-varying vec2  v_UV;
-uniform bool   u_lightOn;
-uniform vec3   u_lightPos;
-uniform vec3   u_cameraPos;
-uniform vec4   u_FragColor;
-uniform int    u_whichTexture;
-uniform sampler2D u_Sampler0;
-uniform sampler2D u_Sampler1;
-void main() {
-  vec4 base;
-  if(u_whichTexture==-2)      base = u_FragColor;
-  else if(u_whichTexture== 0) base = texture2D(u_Sampler0, v_UV);
-  else if(u_whichTexture== 1) base = texture2D(u_Sampler1, v_UV);
-  else                         base = vec4(1,0,0,1);
-  if(!u_lightOn) {
-    gl_FragColor = base;
-    return;
-  }
-  vec3 N = normalize(v_Normal);
-  vec3 L = normalize(u_lightPos - v_VertPos.xyz);
-  float diff = max(dot(N,L),0.0);
-  vec3 R = reflect(-L,N);
-  vec3 E = normalize(u_cameraPos - v_VertPos.xyz);
-  float spec = pow(max(dot(E,R),0.0),16.0);
-  vec3 lit = (0.3+0.7*diff)*base.rgb + spec;
-  gl_FragColor = vec4(lit, base.a);
-}
-`;
-*/
 
+/*
 const FSHADER_SOURCE = `
 precision mediump float;
 
@@ -208,8 +175,111 @@ void main() {
   gl_FragColor = vec4(color, base.a);
 }
 `;
+*/
+
+const FSHADER_SOURCE = `
+precision mediump float;
+
+varying vec3  v_Normal;
+varying vec4  v_VertPos;
+varying vec2  v_UV;
+
+uniform bool   u_lightOn; // Main light toggle
+uniform vec3   u_lightPos; // Main light position
+uniform vec3   u_cameraPos;
+uniform vec4   u_FragColor;
+uniform int    u_whichTexture;
+uniform sampler2D u_Sampler0;
+uniform sampler2D u_Sampler1;
+
+// Spotlight Uniforms
+uniform bool   u_spotlightOn;
+uniform vec3   u_spotlightPos;
+uniform vec3   u_spotlightDirection;
+uniform float  u_spotlightCutoff;
+uniform float  u_spotlightOuterCutoff;
+
+// NEW: Default Lighting Uniform
+uniform bool   u_defaultLightingOn; // Flag to enable default lighting
+
+void main() {
+  // 1) Normal‐visualization mode?
+  if (u_whichTexture == -3) {
+    gl_FragColor = vec4((v_Normal + 1.0) * 0.5, 1.0);
+    return;
+  }
+
+  // 2) Pick base colour or sample texture
+  vec4 base;
+  if      (u_whichTexture == -2) base = u_FragColor;
+  else if (u_whichTexture ==  0) base = texture2D(u_Sampler0, v_UV);
+  else if (u_whichTexture ==  1) base = texture2D(u_Sampler1, v_UV);
+  else                            base = vec4(1.0, 0.0, 0.0, 1.0);
+
+  // NEW: If default lighting is on, just use the base color/texture
+  if (u_defaultLightingOn) {
+    gl_FragColor = base;
+    return; // Exit early, no lighting calculations needed
+  }
 
 
+  // Initialize ambient, diffuse, specular components
+  vec3 ambient  = vec3(0.0, 0.0, 0.0);
+  vec3 diffuse  = vec3(0.0, 0.0, 0.0);
+  vec3 specular = vec3(0.0, 0.0, 0.0);
+
+  // Main Light Calculation (if enabled)
+  if (u_lightOn) {
+    vec3 N_main = normalize(v_Normal);
+    vec3 L_main = normalize(u_lightPos - v_VertPos.xyz);
+    float diff_main = max(dot(N_main, L_main), 0.0);
+    vec3 R_main = reflect(-L_main, N_main);
+    vec3 E_main = normalize(u_cameraPos - v_VertPos.xyz);
+    float spec_main = pow(max(dot(E_main, R_main), 0.0), 16.0);
+
+    // Main light contribution factors
+    ambient  += 0.3 * base.rgb;
+    diffuse  += 0.7 * diff_main * base.rgb;
+    specular += spec_main * base.rgb;
+  }
+
+  // Spotlight Calculation (if enabled)
+  if (u_spotlightOn) {
+    vec3 N_spot = normalize(v_Normal);
+    vec3 L_spot = normalize(u_spotlightPos - v_VertPos.xyz);
+    vec3 S_spot = normalize(u_spotlightDirection);
+
+    float angleDot = dot(-L_spot, S_spot);
+
+    float spotlightFactor = 0.0;
+    if (angleDot > u_spotlightOuterCutoff) {
+      if (angleDot > u_spotlightCutoff) {
+        spotlightFactor = 1.0;
+      } else {
+        spotlightFactor = smoothstep(u_spotlightOuterCutoff, u_spotlightCutoff, angleDot);
+      }
+    }
+    
+    float diff_spot = max(dot(N_spot, L_spot), 0.0);
+    vec3 R_spot = reflect(-L_spot, N_spot);
+    vec3 E_spot = normalize(u_cameraPos - v_VertPos.xyz);
+    float spec_spot = pow(max(dot(E_spot, R_spot), 0.0), 16.0);
+
+    float spotlight_ambient_intensity = 0.1;
+    float spotlight_diffuse_intensity = 1.5;
+    float spotlight_specular_intensity = 2.0;
+
+    ambient  += spotlight_ambient_intensity * base.rgb;
+    diffuse  += spotlight_diffuse_intensity * diff_spot * base.rgb * spotlightFactor;
+    specular += spotlight_specular_intensity * spec_spot * base.rgb * spotlightFactor;
+  }
+
+  // Combine total lighting components
+  vec3 finalColor = ambient + diffuse + specular;
+
+  gl_FragColor = vec4(finalColor, base.a);
+}
+`;
 
 // ─── 3) Globals ─────────────────────────────────────────────────────────
 let canvas, gl;
@@ -235,6 +305,15 @@ let g_normalOn    = false;
 
 let g_redSphere1;
 let g_redSphere2;
+
+let g_spotlightEnabled = false; // Initial state: spotlight is off
+// Spotlight properties (adjust these values to fine-tune the beam)
+let g_spotlightPos = [0, 2, 0]; // Position: Directly above the origin
+let g_spotlightDirection = [0, -1, 0]; // Direction: Straight down
+const g_spotlightCutoff = Math.cos(Math.PI / 8); // Inner cone angle (22.5 degrees)
+const g_spotlightOuterCutoff = Math.cos(Math.PI / 6); // Outer cone angle (30 degrees)
+
+let g_defaultLightingEnabled = false;
 
 
 // ─── 5) Drawing Helpers ─────────────────────────────────────────────────
@@ -529,6 +608,16 @@ function connectVariablesToGLSL() {
   u_cameraPos          = gl.getUniformLocation(gl.program,'u_cameraPos');
   u_Sampler0           = gl.getUniformLocation(gl.program,'u_Sampler0');
   u_Sampler1           = gl.getUniformLocation(gl.program,'u_Sampler1');
+
+
+
+  u_spotlightPos      = gl.getUniformLocation(gl.program, 'u_spotlightPos');
+  u_spotlightDirection= gl.getUniformLocation(gl.program, 'u_spotlightDirection');
+  u_spotlightCutoff   = gl.getUniformLocation(gl.program, 'u_spotlightCutoff');
+  u_spotlightOuterCutoff = gl.getUniformLocation(gl.program, 'u_spotlightOuterCutoff');
+  u_spotlightOn       = gl.getUniformLocation(gl.program, 'u_spotlightOn'); // New uniform for toggle
+
+  u_defaultLightingOn = gl.getUniformLocation(gl.program, 'u_defaultLightingOn');
 }
 
 // ─── 7) Shared Buffers ──────────────────────────────────────────────────
@@ -588,6 +677,15 @@ function addActionsForHtmlUI(){
         renderScene();
       });
   });
+  document.getElementById('spotlightOn').onclick  = ()=>{ g_spotlightEnabled = true; renderScene(); };
+  document.getElementById('spotlightOff').onclick = ()=>{ g_spotlightEnabled = false; renderScene(); };
+
+  document.getElementById('defaultLightingOn').onclick = ()=>{
+    g_defaultLightingEnabled = true; // Enable default mode
+    g_lightEnabled = false;        // Turn off main light
+    g_spotlightEnabled = false;    // Turn off spotlight
+    renderScene();
+  };
 }
 
 // ───10) Event Handlers ───────────────────────────────────────────────────
@@ -657,6 +755,17 @@ function renderScene(){
   gl.uniform3f(u_cameraPos,invV[12],invV[13],invV[14]);
   gl.uniform3f(u_lightPos, g_lightPos[0],g_lightPos[1],g_lightPos[2]);
 
+  gl.uniform1i(u_spotlightOn, g_spotlightEnabled ? 1 : 0);
+  gl.uniform3f(u_spotlightPos, g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
+  gl.uniform3f(u_spotlightDirection, g_spotlightDirection[0], g_spotlightDirection[1], g_spotlightDirection[2]);
+  gl.uniform1f(u_spotlightCutoff, g_spotlightCutoff);
+  gl.uniform1f(u_spotlightOuterCutoff, g_spotlightOuterCutoff);
+
+  // NEW: Set Default Lighting Uniform
+  gl.uniform1i(u_defaultLightingOn, g_defaultLightingEnabled ? 1 : 0);
+
+  drawAllShapes(cubePositionBuffer,cubeUVBuffer);
+
   drawAllShapes(cubePositionBuffer,cubeUVBuffer);
 }
 
@@ -686,6 +795,17 @@ function drawAllShapes(positionBuffer,uvBuffer){
   lightCube.matrix.setTranslate(g_lightPos[0], g_lightPos[1], g_lightPos[2])
                    .scale(0.1,0.1,0.1);
   lightCube.render(positionBuffer, uvBuffer);
+
+  if (g_spotlightEnabled) { // Only draw if spotlight is on
+    const spotlightSource = new Cube();
+    spotlightSource.color = [0.8, 0.8, 0.0, 1]; // Greenish-yellow color
+    spotlightSource.textureNum = -2;
+    spotlightSource.matrix.setTranslate(g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2])
+                           .scale(0.05, 0.05, 0.05) // Smaller cube
+                           .translate(-0.5, -0.5, -0.5); // Center the small cube
+    spotlightSource.render();
+}
+
 
   // NEW: Render Red Spheres
   // Ensure the spheres respect the normal visualization setting

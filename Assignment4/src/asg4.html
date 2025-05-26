@@ -1,3 +1,12 @@
+<!--
+
+  Note To Grader:
+
+  - wierd pixelation on the bottom of my screen, not sure what is causing it and how to fix it
+  - frame rate is rly slow, but all requirements are met and work (just a little slow and choppy)
+  - used AI tools for debugging and helping me implement the spotlight feature
+
+-->
 <!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
@@ -53,6 +62,11 @@
       </label>
     </div>
     <div>
+      Spotlight:
+      <button id="spotlightOn">On</button>
+      <button id="spotlightOff">Off</button>
+    </div>
+    <div>
       Normals:
       <button id="normalOn">On</button>
       <button id="normalOff">Off</button>
@@ -65,6 +79,9 @@
     <div>Light X: <input type="range" id="lightSlideX" min="-100" max="100" value="0"></div>
     <div>Light Y: <input type="range" id="lightSlideY" min="-100" max="100" value="0"></div>
     <div>Light Z: <input type="range" id="lightSlideZ" min="-100" max="100" value="0"></div>
+    <div>
+    <button id="defaultLightingOn">Default Lighting</button>
+    </div>
   </div>
 
   <div id="overlayMessage"></div>
