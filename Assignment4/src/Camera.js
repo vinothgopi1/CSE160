@@ -70,6 +70,7 @@ class Camera {
        this.updateViewMatrix();
    }
 
+   /*
    panLeft(degrees = this.rotationSpeed) { // Yaw Left
        var f = new Vector3().set(this.at).sub(this.eye);
        var rotationMatrix = new Matrix4().setRotate(degrees, this.up.elements[0], this.up.elements[1], this.up.elements[2]);
@@ -81,6 +82,33 @@ class Camera {
    panRight(degrees = this.rotationSpeed) { // Yaw Right
        this.panLeft(-degrees);
    }
+   */
+
+   panLeft(degrees = this.rotationSpeed) {
+    // 1) build forward vector f = at - eye
+    const f = new Vector3();
+    f.set(this.at);        // copy this.at into f
+    f.sub(this.eye);       // f = f - eye
+
+    // 2) rotate it around the up axis
+    const rotationMatrix = new Matrix4()
+      .setRotate(degrees,
+                 this.up.elements[0],
+                 this.up.elements[1],
+                 this.up.elements[2]);
+    const f_prime = rotationMatrix.multiplyVector3(f);
+
+    // 3) new 'at' = eye + f_prime
+    this.at.set(this.eye); // copy eye into at
+    this.at.add(f_prime);  // at = at + f_prime
+
+    this.updateViewMatrix();
+}
+
+panRight(degrees = this.rotationSpeed) {
+    // just invert the sign and reuse panLeft
+    this.panLeft(-degrees);
+}
 
 
    panUp(degrees = this.rotationSpeed) { // Pitch Up
