@@ -186,6 +186,7 @@ varying vec2  v_UV;
 
 uniform bool   u_lightOn; // Main light toggle
 uniform vec3   u_lightPos; // Main light position
+uniform vec3   u_lightColor; // NEW: Light color uniform
 uniform vec3   u_cameraPos;
 uniform vec4   u_FragColor;
 uniform int    u_whichTexture;
@@ -228,7 +229,6 @@ void main() {
   vec3 diffuse  = vec3(0.0, 0.0, 0.0);
   vec3 specular = vec3(0.0, 0.0, 0.0);
 
-  // Main Light Calculation (if enabled)
   if (u_lightOn) {
     vec3 N_main = normalize(v_Normal);
     vec3 L_main = normalize(u_lightPos - v_VertPos.xyz);
@@ -238,9 +238,9 @@ void main() {
     float spec_main = pow(max(dot(E_main, R_main), 0.0), 16.0);
 
     // Main light contribution factors
-    ambient  += 0.3 * base.rgb;
-    diffuse  += 0.7 * diff_main * base.rgb;
-    specular += spec_main * base.rgb;
+    ambient  += 0.3 * base.rgb * u_lightColor;  // NEW: Apply light color
+    diffuse  += 0.7 * diff_main * base.rgb * u_lightColor; // NEW: Apply light color
+    specular += spec_main * base.rgb * u_lightColor; // NEW: Apply light color
   }
 
   // Spotlight Calculation (if enabled)
@@ -293,6 +293,7 @@ let g_camera;
 
 let g_lightEnabled = true;
 let g_lightPos = [0,1,-2];
+let g_lightColor = [1.0, 1.0, 1.0];
 let gAnimalGlobalRotation = 0;
 
 let isDragging=false, lastMouseX, lastMouseY;
@@ -604,6 +605,7 @@ function connectVariablesToGLSL() {
   u_ProjectionMatrix   = gl.getUniformLocation(gl.program,'u_ProjectionMatrix');
   u_whichTexture       = gl.getUniformLocation(gl.program,'u_whichTexture');
   u_lightOn            = gl.getUniformLocation(gl.program,'u_lightOn');
+  u_lightColor         = gl.getUniformLocation(gl.program,'u_lightColor'); // NEW: Uniform for light color
   u_lightPos           = gl.getUniformLocation(gl.program,'u_lightPos');
   u_cameraPos          = gl.getUniformLocation(gl.program,'u_cameraPos');
   u_Sampler0           = gl.getUniformLocation(gl.program,'u_Sampler0');
@@ -677,6 +679,17 @@ function addActionsForHtmlUI(){
         renderScene();
       });
   });
+
+
+  // NEW: Light Color sliders
+  ['R','G','B'].forEach(colorComponent => {
+    document.getElementById('lightColor' + colorComponent)
+      .addEventListener('input', e => {
+        g_lightColor[['R','G','B'].indexOf(colorComponent)] = e.target.value / 100.0; // Scale to 0.0-1.0
+        renderScene();
+      });
+  });
+
   document.getElementById('spotlightOn').onclick  = ()=>{ g_spotlightEnabled = true; renderScene(); };
   document.getElementById('spotlightOff').onclick = ()=>{ g_spotlightEnabled = false; renderScene(); };
 
@@ -754,7 +767,7 @@ function renderScene(){
   const invV=new Matrix4(g_camera.viewMat).invert().elements;
   gl.uniform3f(u_cameraPos,invV[12],invV[13],invV[14]);
   gl.uniform3f(u_lightPos, g_lightPos[0],g_lightPos[1],g_lightPos[2]);
-
+  gl.uniform3f(u_lightColor, g_lightColor[0], g_lightColor[1], g_lightColor[2]); // NEW: Pass light color
   gl.uniform1i(u_spotlightOn, g_spotlightEnabled ? 1 : 0);
   gl.uniform3f(u_spotlightPos, g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
   gl.uniform3f(u_spotlightDirection, g_spotlightDirection[0], g_spotlightDirection[1], g_spotlightDirection[2]);

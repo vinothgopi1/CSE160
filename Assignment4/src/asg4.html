@@ -4,69 +4,93 @@
 
   - wierd pixelation on the bottom of my screen, not sure what is causing it and how to fix it
   - frame rate is rly slow, but all requirements are met and work (just a little slow and choppy)
+  - there are two red shperes on teh map u gotta turn around a bit to see one of them. 
   - used AI tools for debugging and helping me implement the spotlight feature
 
 -->
-<!-- index.html -->
+<!-- index.html --> 
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <title>3D World with Lighting</title>
   <style>
-    body { margin:0; overflow:hidden; background:#000; color:#fff; }
+    body {
+      margin:0;
+      overflow:hidden; /* Keep this to prevent scrollbars */
+      background:#000;
+      color:#fff;
+      /* Using flexbox for main layout to center canvas and controls */
+      display: flex;
+      flex-direction: column; /* Stack canvas and controls vertically */
+      align-items: center;   /* Center items horizontally */
+      min-height: 100vh;     /* Ensure body takes full viewport height */
+    }
+
+    canvas {
+      display: block; /* Remove extra space below canvas if it's inline */
+      margin-top: 10px; /* Add some space from the top of the viewport */
+    }
+
     #controls {
-      position: absolute; top: 10px; left: 10px;
-      background: rgba(0,0,0,0.5); padding: 10px;
-      font-family: sans-serif; z-index: 1;
-    }
-    #overlayMessage {
-      position: absolute; top: 10px; right: 10px;
-      background: rgba(255,255,255,0.8); color:#000;
-      padding:5px 10px; border-radius:4px; display:none;
-      font-family:sans-serif;
-    }
-    #numdot {
-      position: absolute; bottom: 10px; right: 10px;
-      font-family: monospace;
-    }
-
-    #overlayMessage {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        padding: 20px 40px;
-        background: rgba(0, 0, 0, 0.75);
-        color: white;
-        font-size: 2rem;
-        font-family: sans-serif;
-        border-radius: 8px;
-        display: none;
-        pointer-events: none;
-        z-index: 10;
-        text-align: center;
-      }
-
-      #instructions {
-      position: absolute;
-      top: 10px; /* Aligned with the top of the canvas */
-      /* Calculate right position relative to canvas width */
-      left: 810px; /* Assuming your canvas is 800px wide, place it 10px to its right */
-      width: 200px; /* Adjust width as needed */
+      /* Removed position: absolute, top, left */
       background: rgba(0,0,0,0.5);
       padding: 10px;
       font-family: sans-serif;
-      color: white; /* White text */
+      z-index: 1;
+      margin-top: 1px; /* Space between canvas and controls */
+      width: 800px; /* Match canvas width for a cleaner look */
+      box-sizing: border-box; /* Include padding in the width calculation */
+      /* display: flex; /* Optional: if you want items inside controls to layout horizontally */
+      /* flex-wrap: wrap; */
+      /* justify-content: space-around; */
+    }
+
+    /* Keep overlayMessage centered on the screen */
+    #overlayMessage {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px 40px;
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      font-size: 2rem;
+      font-family: sans-serif;
+      border-radius: 8px;
+      display: none;
+      pointer-events: none;
+      z-index: 10;
+      text-align: center;
+    }
+
+    /* Move numdot to the bottom right of the controls panel */
+    #numdot {
+      position: absolute; /* Re-position relative to the viewport/body */
+      bottom: 10px; /* Anchor to bottom */
+      right: 10px;  /* Anchor to right */
+      font-family: monospace;
+      z-index: 1; /* Ensure it's above other elements if overlaps */
+    }
+
+
+    #instructions {
+      position: absolute; /* Keep absolute to stay to the right of the canvas */
+      /* Adjusted top to align with canvas top */
+      top: 10px;
+      left: 820px; /* 800px (canvas width) + 10px (left margin) + 10px (gap) */
+      width: 200px;
+      background: rgba(0,0,0,0.5);
+      padding: 10px;
+      font-family: sans-serif;
+      color: white;
       font-size: 0.9em;
       z-index: 1;
       border-radius: 5px;
     }
     #instructions p {
-      margin: 5px 0; /* Add some spacing between lines */
+      margin: 5px 0;
     }
-
-
   </style>
 </head>
 <body onload="main()">
@@ -95,6 +119,14 @@
       <button id="lightOn">On</button>
       <button id="lightOff">Off</button>
     </div>
+
+    <div>
+      Light Color:
+      <label>R: <input type="range" id="lightColorR" min="0" max="100" value="100"></label>
+      <label>G: <input type="range" id="lightColorG" min="0" max="100" value="100"></label>
+      <label>B: <input type="range" id="lightColorB" min="0" max="100" value="100"></label>
+    </div>
+
     <div>Light X: <input type="range" id="lightSlideX" min="-100" max="100" value="0"></div>
     <div>Light Y: <input type="range" id="lightSlideY" min="-100" max="100" value="0"></div>
     <div>Light Z: <input type="range" id="lightSlideZ" min="-100" max="100" value="0"></div>
